@@ -10,8 +10,8 @@ from rdflib.namespace import CSVW, DC, DCAT, DCTERMS, DOAP, FOAF, ODRL2, ORG, OW
     VOID, XMLNS, XSD
 
 SO = Namespace('http://schema.org/')
-OEKG_R = Namespace("http://oekg.l3s.uni-hannover.de/resource/")
-OEKG_S = Namespace("http://oekg.l3s.uni-hannover.de/schema/")
+OEKG_R = Namespace(u'http://oekg.l3s.uni-hannover.de/resource/')
+OEKG_S = Namespace('http://oekg.l3s.uni-hannover.de/schema/')
 SEM = Namespace('http://semanticweb.cs.vu.nl/2009/11/sem/')
 
 url = "http://localhost:4567/" # This needs to be changed
@@ -35,23 +35,30 @@ def insert_example_triples():
     # create a set of triples describing two news articles with titles and main entities
     g = Graph()
 
+    # bind prefixes. Only used when you create triples in the .ttl format. But for the upload, we use .nt!
+    g.bind("oekg-r", OEKG_R)
+    g.bind("oekg-s", OEKG_S)
+    g.bind("so", SO)
+
     # add triples of first news article
     g.add((OEKG_R.article1, RDF.type, SO.Article))
-    g.add((OEKG_R.article1, SO.mainEntity, URIRef(oekg_ids[biden_wikidata_id], OEKG_R)))
+    g.add((OEKG_R.article1, SO.mainEntity, URIRef(OEKG_R)+oekg_ids[biden_wikidata_id]))
     g.add((OEKG_R.article1, SO.headline, Literal('Bidens wins election.', 'en')))
 
     # add triples of second news article
     g.add((OEKG_R.article2, RDF.type, SO.Article))
-    g.add((OEKG_R.article2, SO.mainEntity, URIRef(oekg_ids[obama_inauguration_wikidata_id], OEKG_R)))
+    g.add((OEKG_R.article2, SO.mainEntity, URIRef(OEKG_R)+oekg_ids[obama_inauguration_wikidata_id]))
     g.add((OEKG_R.article2, SO.headline, Literal("Obama inaugurated the second time.", "en")))
 
-    # Write triples into a file "example_articles.ttl".
-    file = open("example_articles.nt", "w")
+    # Write triples into a file "example_articles.nt". Use the .nt format for uploading the graph.
+    # For testing, you can use "turtle" as well.
+    filename = "example_articles.nt"
+    file = open(filename, "w")
     file.write(g.serialize(format='nt').decode("utf-8"))
     file.close()
 
     # Upload the file into to the OEKG, using the example graph
-    uploadFileToOEKG(graph, "example_articles.nt")
+    uploadFileToOEKG(graph, filename)
 
     # Run an example query
     query = ("SELECT ?title WHERE { "
@@ -102,9 +109,15 @@ def clear_graph(graph_to_be_cleared):
 
 
 def query_oekg(query):
-    result1 = requests.get(url + "query/" + urllib.parse.quote_plus(query))
-    print(result1)
-
+    result1 = requests.get(url + "sparql?query=" + urllib.parse.quote_plus(query) + "&format=json")
+    print("RES: "+str(result1.json()))
 
 if __name__ == '__main__':
     insert_example_triples()
+
+    # Run an example query
+    query = ("SELECT ?mainEntity ?title WHERE { "
+              "?article so:mainEntity ?mainEntity .  "
+              "?mainEntity owl:sameAs dbr:Joe_Biden . "
+              "?article so:headline ?title . }")
+    query_oekg(query)
