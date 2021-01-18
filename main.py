@@ -53,8 +53,12 @@ def insert_example_triples():
     # Upload the file into to the OEKG, using the example graph
     uploadFileToOEKG(graph, "example_articles.nt")
 
-    #clear_graph(graph)
-
+    # Run an example query
+    query = ("SELECT ?title WHERE { "
+              "?article so:mainEntity ?mainEntity .  "
+              "?mainEntity owl:sameAs dbr:Joe_Biden . "
+              "?article dcterms:title ?title . }")
+    query_oekg(query)
 
 def uploadFileToOEKG(graph, file_name):
     print("uploadFileToOEKG: " + url + "upload/"+graph)
@@ -97,15 +101,10 @@ def clear_graph(graph_to_be_cleared):
     print(r.text)
 
 
-def query_oekg():
-    query1 = ("SELECT ?title WHERE { "
-              "?article so:mainEntity ?mainEntity .  "
-              "?mainEntity owl:sameAs dbr:Joe_Biden . "
-              "?article dcterms:title ?title . }")
-    result1 = requests.get(url + "query/" + urllib.parse.quote_plus(query1))
+def query_oekg(query):
+    result1 = requests.get(url + "query/" + urllib.parse.quote_plus(query))
     print(result1)
 
 
 if __name__ == '__main__':
     insert_example_triples()
-    query_oekg()
