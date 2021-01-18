@@ -14,7 +14,7 @@ OEKG_R = Namespace(u'http://oekg.l3s.uni-hannover.de/resource/')
 OEKG_S = Namespace('http://oekg.l3s.uni-hannover.de/schema/')
 SEM = Namespace('http://semanticweb.cs.vu.nl/2009/11/sem/')
 
-url = "http://localhost:4567/" # This needs to be changed
+url = "http://smldapi.l3s.uni-hannover.de/" # This needs to be changed
 graph = "example"
 
 def insert_example_triples():
@@ -60,13 +60,6 @@ def insert_example_triples():
     # Upload the file into to the OEKG, using the example graph
     uploadFileToOEKG(graph, filename)
 
-    # Run an example query
-    query = ("SELECT ?title WHERE { "
-              "?article so:mainEntity ?mainEntity .  "
-              "?mainEntity owl:sameAs dbr:Joe_Biden . "
-              "?article dcterms:title ?title . }")
-    query_oekg(query)
-
 def uploadFileToOEKG(graph, file_name):
     print("uploadFileToOEKG: " + url + "upload/"+graph)
     files = {'upload_file': open(file_name, 'rb')}
@@ -82,8 +75,8 @@ def getOEKGIdByWikidataId(wikidata_id):
 def getOEKGIdsByWikidataIds(*wikidata_ids):
     # Get OEKG IDs of a set of entity via its Wikidata ID
     ids = {}
-    for ids_sublist in np.array_split(wikidata_ids, math.ceil(len(wikidata_ids) / 1)):
-        res = requests.get(url + "api/wikidataIds/" + ";".join(ids_sublist)).json()
+    for ids_sublist in np.array_split(wikidata_ids, math.ceil(len(wikidata_ids) / 5000)):
+        res = requests.post(url + "api/wikidataIds", data= ";".join(ids_sublist)).json()
         ids = merge(ids, res)
     return ids
 
@@ -96,14 +89,15 @@ def getOEKGIdByWikipediaId(language, wikipedia_id):
 def getOEKGIdsByWikipediaIds(language, *wikipedia_ids):
     # Get OEKG IDs for a set of Wikidata IDs
     ids = {}
-    for ids_sublist in np.array_split(wikipedia_ids, math.ceil(len(wikipedia_ids) / 1)):
-        res = requests.get(url + "api/wikidataIds/" + ";".join(ids_sublist)).json()
+    for ids_sublist in np.array_split(wikipedia_ids, math.ceil(len(wikipedia_ids) / 5000)):
+        res = requests.post(url + "api/wikidataIds/",data=";".join(ids_sublist)).json()
         ids = merge(ids, res)
     return ids
 
 
 def clear_graph(graph_to_be_cleared):
     # Remove all triples uploaded within the given graph.
+    print("Clear graph " + graph_to_be_cleared+".")
     r = requests.get(url + "clear/"+graph_to_be_cleared)
     print(r.text)
 
